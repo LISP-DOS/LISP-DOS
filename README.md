@@ -2,6 +2,8 @@
 
 O **LISP-DOS** é um sistema operacional minimalista, escrito do zero e projetado para a arquitetura x86_64. O objetivo central deste projeto é reavivar o sonho das clássicas "LISP Machines", trazendo um ambiente computacional onde o interpretador LISP roda nativamente próximo ao "bare metal", com abstrações reduzidas.
 
+![LISP-DOS em Execução](images/lispdos-screenshot-1.png)
+
 ---
 
 ## 📜 Histórico de Desenvolvimento

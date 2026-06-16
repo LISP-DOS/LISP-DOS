@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS Developer Guide</title>
+    
+    <!-- Mermaid.js para diagramas -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-strong: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #60a5fa;
+            --danger-color: #f43f5e;
+            --link-color: #38bdf8;
+            --code-bg: #0b1121;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--text-strong);
+            margin: 0;
+            font-size: 3rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--accent-color);
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h2 {
+            color: var(--text-strong);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-top: 3rem;
+        }
+
+        h3 {
+            color: var(--text-strong);
+            margin-top: 2rem;
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            border-color: var(--accent-color);
+        }
+
+        .card a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            height: 100%;
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            color: var(--text-strong);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-desc {
+            color: var(--text-color);
+            font-size: 0.95rem;
+        }
+
+        .diagram-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            text-align: center;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: var(--accent-hover);
+        }
+
+        ul.module-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        ul.module-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        ul.module-list li:last-child {
+            border-bottom: none;
+        }
+
+        ul.module-list strong {
+            color: var(--link-color);
+            display: inline-block;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>LISP-DOS Developer Guide</h1>
+    <p>Manual Oficial da Arquitetura do Sistema Operacional LISP-DOS</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>Resumo da Arquitetura</h2>
+        <p>O LISP-DOS é um sistema operacional construído do zero <em>(from scratch)</em> projetado para emular a simplicidade de processo-único, porém embarcando uma arquitetura <strong>nativamente 64-bits (x86_64)</strong>, paginação multinível, e um modelo robusto de segurança e isolamento usando anéis de privilégio (Ring 0 vs Ring 3).</p>
+        
+        <p>Ao invés de depender das antigas interrupções de BIOS (<code>INT 10h</code>, <code>INT 13h</code>), nós controlamos o Hardware Diretamente através de uma camada moderna de abstração (HAL), gerenciando portas I/O, MMIO, e o barramento PCI/USB diretamente em Long Mode. O Kernel é desenhado para prevenir agressivamente <strong>Race Conditions</strong> e <strong>CPU Deadlocks</strong> por meio do uso calculado de salvaguardas de Assembly (como <code>sti/hlt</code> atômicos em loops de I/O) e proteção de estado contra perdas de contexto de User Space (preservando perfeitamente a System V ABI e registradores callee-saved).</p>
+    </section>
+
+    <section>
+        <h2>Diagrama de Camadas (Macro-Arquitetura)</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph TD
+                subgraph "User Space (Ring 3)"
+                    UI[User Interface / Shell]
+                    EDIT[Text Editor - editor.elf]
+                    LISP[Interpreter - lisp.elf]
+                    LIB[Standard Library - syscalls.h]
+                    UI -.-> LIB
+                    EDIT -.-> LIB
+                    LISP -.-> LIB
+                end
+
+                subgraph "Kernel Space (Ring 0)"
+                    SYSCALL{Syscall Gateway / ABI x86_64}
+                    
+                    subgraph "Core Modules"
+                        PROC[Process & ELF Loader]
+                        MEM[Memory: PMM / VMM / Heap]
+                        STR[Strings & C-Lib minimal]
+                    end
+                    
+                    subgraph "Filesystem (VFS)"
+                        FAT16[FAT16 Disk Driver]
+                        TARFS[TarFS Ramdisk Initrd]
+                    end
+                    
+                    subgraph "Hardware Abstraction Layer (HAL)"
+                        VGA[VGA Text Mode]
+                        KB[PS/2 Keyboard]
+                        ATA[ATA PIO Disk IO]
+                        PCI[PCI & ACPI]
+                        USB[USB xHCI / EHCI]
+                        SER[Serial Console]
+                    end
+                end
+
+                LIB ==&gt; |"syscall / sysretq"| SYSCALL
+                SYSCALL --&gt; PROC
+                SYSCALL --&gt; FAT16
+                SYSCALL --&gt; VGA
+                SYSCALL --&gt; KB
+                
+                PROC --&gt; MEM
+                FAT16 --&gt; ATA
+                TARFS --&gt; MEM
+                
+                MEM --&gt; HAL
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Organização do Desenvolvimento (Árvore de Diretórios)</h2>
+        <p>O repositório está subdividido rigorosamente para garantir a separação entre as camadas lógicas. Evite cruzar responsabilidades (ex: O FAT16 não deve invocar portas de VGA diretamente).</p>
+
+        <div class="card" style="background-color: var(--code-bg); padding: 1.5rem; margin-top: 1rem;">
+            <ul class="module-list" style="margin:0; font-family: 'Fira Code', monospace; color: #a1a1aa;">
+                <li><strong style="color: #60a5fa;">/src/hal/</strong> Abstrações de hardware. Drivers de baixo nível (<code>vga.c</code>, <code>ata.c</code>, <code>keyboard.c</code>, <code>pci.c</code>, <code>usb.c</code>).</li>
+                <li><strong style="color: #60a5fa;">/src/kernel/</strong> Cérebro do OS. Módulos centrais (<code>main.c</code>, <code>syscall.c</code>, <code>process.c</code>, <code>fat16.c</code>) e gerência de memória (<code>pmm.c</code>, <code>vmm.c</code>).</li>
+                <li><strong style="color: #60a5fa;">/src/tools/</strong> Programas do espaço de usuário Ring-3 (<code>editor.c</code>, <code>lisp.c</code>, <code>syscalls.h</code>). Estes geram executáveis ELF autônomos.</li>
+                <li><strong style="color: #60a5fa;">/limine/</strong> O Bootloader. Realiza a passagem do UEFI/BIOS para nosso Kernel Long Mode.</li>
+                <li><strong style="color: #60a5fa;">/doc/</strong> & <strong>/dev-guide-html/</strong> Documentações técnicas extensas (como este site).</li>
+                <li><strong style="color: #60a5fa;">Makefile</strong> Orquestrador de compilação. Cuida da geração dos artefatos (<code>kernel.elf</code>, <code>hdd.img</code>, <code>msdos-lisp.iso</code>).</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Fluxo de Execução de Processos (Lifecycle)</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                sequenceDiagram
+                    participant SHELL as Kernel Shell (main.c)
+                    participant EXEC as Process Loader
+                    participant ELF as Arquivo no FAT16
+                    participant VMM as Memória Virtual
+                    participant USER as Programa (Ring 3)
+
+                    SHELL-&gt;&gt;EXEC: process_exec("editor.elf", "arquivo.txt")
+                    EXEC-&gt;&gt;ELF: Busca Tamanho e Copia Bytes Brutos
+                    EXEC-&gt;&gt;VMM: Cria PML4 Isolada e Mapeia RAM
+                    EXEC-&gt;&gt;VMM: Mapeia Pilha (User Stack)
+                    EXEC-&gt;&gt;USER: `jump_usermode` via IRETQ
+                    Note over USER: Contexto passa a rodar em Ring 3
+                    USER-&gt;&gt;SHELL: `sys_exit` aborta User-Space via Syscall
+                    SHELL--&gt;&gt;SHELL: Imprime `C:\&gt; ` e aguarda Input
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Documentações Específicas por Módulo</h2>
+        <p>Acesse o detalhamento técnico e assinaturas de funções de cada pilar da fundação do LISP-DOS selecionando as documentações abaixo:</p>
+        
+        <div class="grid-cards">
+            <!-- Card Syscall -->
+            <div class="card">
+                <a href="syscall.html">
+                    <div class="card-icon">⚡</div>
+                    <div class="card-title">Módulo Syscall</div>
+                    <div class="card-desc">Detalhes sobre as transições de privilégio de sistema, <code>syscall_asm.S</code>, validações do VMM e lista de todas as Syscalls disponíveis (Interface ABI x86_64).</div>
+                </a>
+            </div>
+
+            <!-- Card FAT16 -->
+            <div class="card">
+                <a href="fat16.html">
+                    <div class="card-icon">💾</div>
+                    <div class="card-title">Sistema de Arquivos FAT16</div>
+                    <div class="card-desc">Decodificação de setores brutos (ATA) para o padrão 8.3, navegação no Root Directory, manipulação de Clusters e persistência encadeada.</div>
+                </a>
+            </div>
+
+            <!-- Card Memory -->
+            <div class="card">
+                <a href="memory.html">
+                    <div class="card-icon">🧠</div>
+                    <div class="card-title">Gerenciamento de Memória</div>
+                    <div class="card-desc">Estruturas essenciais como o Gerenciador Físico (PMM via Bitmap), Paginação de 4 níveis (VMM e HHDM) e a alocação dinâmica do Kernel (Heap/Kalloc).</div>
+                </a>
+            </div>
+
+            <!-- Card Strings -->
+            <div class="card">
+                <a href="string.html">
+                    <div class="card-icon">🔤</div>
+                    <div class="card-title">Strings & Minimal C-Lib</div>
+                    <div class="card-desc">As implementações frestandings seguras construídas do zero (memset, memcpy, strcmp, etc) aplicadas ao nosso parser de arquivos.</div>
+                </a>
+            </div>
+
+            <!-- Card VGA e Vídeo -->
+            <div class="card">
+                <a href="../doc-sources/vga_video.html">
+                    <div class="card-icon">📺</div>
+                    <div class="card-title">Vídeo e VGA (HAL)</div>
+                    <div class="card-desc">Detalhes sobre a inicialização do protocolo Limine, framebuffer, renderização via bitmap de 8x8 pixels e controle de cor/coords da tela de texto.</div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer style="text-align: center; margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: var(--border-color);">
+        <p>LISP-DOS OS - Antigravity Agent Coding Assistant</p>
+    </footer>
+
+</div>
+</body>
+</html>

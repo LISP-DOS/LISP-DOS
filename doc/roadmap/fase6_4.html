@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Parte 6.4 (Core e Framebuffer)</title>
+    <style>
+        :root { --bg-color: #0f172a; --surface-color: #1e293b; --border-color: #334155; --text-color: #cbd5e1; --text-strong: #f8fafc; --accent-color: #ef4444; --link-color: #fca5a5; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        h1, h2, h3 { color: var(--text-strong); }
+        h1 { font-size: 2.5rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; }
+        .nav-back { display: inline-block; margin-bottom: 2rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .nav-back:hover { text-decoration: underline; }
+        .box { background-color: var(--surface-color); padding: 1.5rem; margin: 1.5rem 0; border-radius: 8px; border: 1px solid var(--border-color); }
+        code { background-color: #0b1121; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fca5a5; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="fase6.html" class="nav-back">← Voltar à Fase 6</a>
+    <h1>Parte 6.4: Integração do LISP Core e Mailbox Framebuffer</h1>
+
+    <div class="box">
+        <h2>1. Reativando a Interface Gráfica (GPU Mailbox)</h2>
+        <p>No x86, o bootloader <em>Limine</em> fornecia a tela de pixels pra gente de forma mágica através de uma estrutura C pronta. No Raspberry Pi, o Kernel precisa "conversar" eletronicamente com a GPU VideoCore para negociar um monitor via conexão HDMI.</p>
+        <p>A arquitetura ARM da Broadcom utiliza um canal de mensagens chamado <strong>Property Mailbox</strong> (Canal 8). A implementação ocorrerá assim:</p>
+        <ul>
+            <li>O OS do LISP alocará um array na memória com formato rígido de Tags (A TAG <code>0x00040003</code> requisita tamanho físico do display, a TAG <code>0x00040005</code> negocia a profundidade em 32-bits de cor, e a <code>0x00040001</code> pede a alocação do Framebuffer propriamente dito).</li>
+            <li>O CPU empurra o endereço de memória dessa mensagem estruturada para os registradores Mailbox MMIO de hardware (<code>0xFE00B880</code>).</li>
+            <li>A GPU responde injetando os ponteiros virtuais contendo o endereço alocado da tela no hardware nativo, trazendo as funcionalidades completas que perdemos no port.</li>
+        </ul>
+        <p>Feito isso, nosso driver anterior nativo <code>vga.c</code> (que rasteriza textos e retângulos pixel por pixel) voltará a ligar milagrosamente, exigindo apenas que os ponteiros base sejam ajustados na struct inicial.</p>
+    </div>
+
+    <div class="box">
+        <h2>2. Portando Aplicações (Cross-Compiling Apps)</h2>
+        <p>O Código fonte isolado das nossas ferramentas (<code>lisp.c</code> e <code>editor.c</code>) é 100% agnóstico a processador pois é puro "C". O trabalho agora é puramente de reestruturação de Build (Makefile).</p>
+        <ul>
+            <li>Elas serão recompiladas usando a flag nativa do GCC ARM para gerar binários no formato puro ELF nativos para arm64.</li>
+            <li>O Interrupt Handler de exceptions de Kernel (atual <code>syscall_asm.S</code> x86) será reescrito na sintaxe ARM <code>svc #0</code>, que é a interrupção do tipo Supervisor Call usada pelo ARM para delegar transição Ring 3 (EL0) -> Ring 0 (EL1).</li>
+        </ul>
+    </div>
+
+    <div class="box">
+        <h2>Conclusão da Fase 6</h2>
+        <p>O término desta epopeia garantirá a você plugar um cartão SD formatado com a nossa imagem "kernel8.img" em um <strong>Raspberry Pi 4 físico</strong> de bancada, ligar o HDMI na televisão e ver a belíssima e icônica tela preta do LISP-DOS aguardando comandos do seu código nativo (LISP) sob hardware bare-metal brutal sem depender de virtualizações complexas.</p>
+    </div>
+</div>
+</body>
+</html>

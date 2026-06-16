@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Parte 6.2 (UART e EL)</title>
+    <style>
+        :root { --bg-color: #0f172a; --surface-color: #1e293b; --border-color: #334155; --text-color: #cbd5e1; --text-strong: #f8fafc; --accent-color: #ef4444; --link-color: #fca5a5; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        h1, h2, h3 { color: var(--text-strong); }
+        h1 { font-size: 2.5rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; }
+        .nav-back { display: inline-block; margin-bottom: 2rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .nav-back:hover { text-decoration: underline; }
+        .box { background-color: var(--surface-color); padding: 1.5rem; margin: 1.5rem 0; border-radius: 8px; border: 1px solid var(--border-color); }
+        code { background-color: #0b1121; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fca5a5; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 10px; border: 1px solid var(--border-color); text-align: left; }
+        th { background-color: #0b1121; color: var(--text-strong); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="fase6.html" class="nav-back">← Voltar à Fase 6</a>
+    <h1>Parte 6.2: Exception Levels (EL) e Debug via UART</h1>
+
+    <div class="box">
+        <h2>1. Descida de Privilégios (Exception Levels)</h2>
+        <p>O ARM não utiliza os mesmos conceitos de "Ring 0" e "Ring 3" que o x86. Ele utiliza <strong>Exception Levels (EL)</strong> invertidos, onde o número maior tem mais poder.</p>
+        <table>
+            <tr><th>Level</th><th>Descrição</th><th>Mapeamento no LISP-DOS</th></tr>
+            <tr><td>EL3</td><td>Monitor Seguro (TrustZone)</td><td>Ignorado pelo OS Base</td></tr>
+            <tr><td>EL2</td><td>Hypervisor</td><td>O Raspberry Pi joga nosso código aqui na largada.</td></tr>
+            <tr><td>EL1</td><td>Sistema Operacional (Kernel)</td><td>Nós desceremos para este modo para rodar o Core.</td></tr>
+            <tr><td>EL0</td><td>Aplicações (User Mode)</td><td>Onde o LISP e o Editor vão rodar isolados.</td></tr>
+        </table>
+        <p>A primeira missão estrutural no arquivo de assembly do kernel será manipular os registradores especiais <code>spsr_el2</code> e <code>elr_el2</code> e chamar a instrução <code>eret</code> (Exception Return) para forçar o processador a cair com segurança do nível de Hypervisor (EL2) para o nível de Kernel real (EL1), que nos garantirá as permissões padrão para escrever na tabela de memória.</p>
+    </div>
+
+    <div class="box">
+        <h2>2. UART (Universal Asynchronous Receiver-Transmitter)</h2>
+        <p>No PC, podemos apenas escrever em <code>0xB8000</code> para mostrar letras na tela. Na placa Raspberry Pi física, configurar o HDMI dá muito trabalho nas primeiras semanas. A forma canônica de "falar" com a placa na Fase Zero é via os Pinos GPIO usando comunicação Serial (UART).</p>
+        <p>O Raspberry Pi 4 possui o hardware <strong>Mini UART</strong> compatível com o protocolo antigo 16550. É a forma mais robusta de exibir logs.</p>
+        
+        <h3>Procedimento do Driver Serial (hal/rpi_uart.c):</h3>
+        <ol>
+            <li>No arquivo <code>config.txt</code> do cartão SD, adicionaremos a flag <code>enable_uart=1</code>, que pede para a GPU manter a frequência do Core Clock estável, necessária para o Mini UART funcionar sem gerar caracteres lixo.</li>
+            <li>No código do LISP-DOS, acessaremos os registradores <code>AUX_MU_IER_REG</code> e <code>AUX_MU_LCR_REG</code> nas portas MMIO usando offsets mapeados.</li>
+            <li>Vamos configurar o Baud Rate matematicamente (ex: 115200) baseado no Clock rate da GPU (típicamente 500 MHz no RPi 4).</li>
+            <li>Programaremos os <strong>Pinos GPIO 14 (TX) e 15 (RX)</strong> para sua "Função Alternativa 5" para delegá-los ao Módulo UART ao invés da operação digital clássica de liga/desliga.</li>
+        </ol>
+        <p>Isso substituirá a nossa função de teste <code>vga_print</code> provisoriamente por <code>uart_print</code> para atestar que o Kernel bootou e não travou.</p>
+    </div>
+</div>
+</body>
+</html>

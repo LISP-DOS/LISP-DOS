@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistemas de Arquivos - LISP-DOS</title>
+    <style>
+        :root { --bg-color: #0f172a; --text-color: #cbd5e1; --accent-color: #38bdf8; --card-bg: #1e293b; --border-color: #334155; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; margin: 0; padding: 0; }
+        header { background-color: var(--card-bg); padding: 2rem; border-bottom: 1px solid var(--border-color); }
+        h1 { color: #fff; margin: 0; }
+        .nav { margin-top: 1rem; }
+        .nav a { color: var(--accent-color); text-decoration: none; margin-right: 1rem; }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .module { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
+        .module h2 { color: var(--accent-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        code { background-color: #000; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; color: #a5b4fc; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Gerenciamento de Arquivos</h1>
+            <div class="nav"><a href="index.html">&larr; Voltar para a Página Inicial</a></div>
+        </div>
+    </header>
+    <div class="container">
+        
+        <div class="module">
+            <h2>1. tarfs.c - Initramfs Local (Apenas Leitura)</h2>
+            <p>O <code>tarfs.c</code> implementa um interpretador básico do formato de arquivo USTAR (Standard TAR). O bootloader Limine é instruído no arquivo <code>limine.conf</code> a carregar arquivos arbitrários como "módulos" no espaço de memória antes de executar o kernel.</p>
+            <p>O LISP-DOS utiliza isso como uma unidade de disco <strong>somente leitura (Initramfs)</strong>. Ao iniciar, o código mapeia a localização desse arquivo TAR na RAM e lê os cabeçalhos de bloco de 512 bytes procurando nomes de arquivos (como utilitários ou o <code>LEIAME.txt</code>).</p>
+            <p>Funções chaves:</p>
+            <ul>
+                <li><code>tarfs_init()</code>: Procura o módulo TAR na memória do Limine.</li>
+                <li><code>tarfs_dir()</code>: Lê sequencialmente o TAR mostrando o nome dos arquivos no terminal.</li>
+                <li><code>tarfs_type()</code>: Encontra e imprime o conteúdo de um arquivo na tela.</li>
+            </ul>
+        </div>
+
+        <div class="module">
+            <h2>2. fat16.c - Disco Rígido Persistente (Leitura/Escrita)</h2>
+            <p>O arquivo <code>fat16.c</code> lida com sistemas de arquivos Microsoft FAT16. Diferente do TarFS, este componente possui permissão para leitura e <strong>escrita</strong>, garantindo que o que foi feito no computador não seja perdido no desligamento.</p>
+            <p>Ele opera em cima da HAL comunicando-se com a função <code>ata_read_sector</code> e <code>ata_write_sector</code> em <code>ata.c</code>.</p>
+            <p><strong>A Arquitetura Lógica:</strong></p>
+            <ol>
+                <li><strong>Boot Sector (MBR/VBR):</strong> Lê o setor 0 para encontrar os parâmetros do disco (Tamanho do Cluster, Bytes por Setor, Reserva).</li>
+                <li><strong>FAT (File Allocation Table):</strong> Lê a tabela que indica onde o arquivo continua (fragmentação) no disco físico.</li>
+                <li><strong>Diretório Raiz (Root Directory):</strong> Percorre as entradas de 32 bytes procurando o nome em formato "8.3" (8 letras para o nome, 3 para a extensão, como <code>SOMA    LI </code>).</li>
+            </ol>
+            <p>A persistência no LISP-DOS é garantida por funções dentro deste arquivo como <code>fat16_write_file</code>, que alocam clusters vazios na tabela FAT, gravam os dados nas regiões de dados do disco físico e criam a entrada do arquivo no diretório raiz.</p>
+        </div>
+
+    </div>
+</body>
+</html>

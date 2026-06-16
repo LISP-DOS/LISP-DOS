@@ -1,0 +1,3 @@
+(defun square (x) (* x x))
+(print (square 5))
+(print (+ 10 20))

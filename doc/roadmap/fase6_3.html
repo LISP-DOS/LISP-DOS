@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Parte 6.3 (MMU e MMIO)</title>
+    <style>
+        :root { --bg-color: #0f172a; --surface-color: #1e293b; --border-color: #334155; --text-color: #cbd5e1; --text-strong: #f8fafc; --accent-color: #ef4444; --link-color: #fca5a5; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        h1, h2, h3 { color: var(--text-strong); }
+        h1 { font-size: 2.5rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; }
+        .nav-back { display: inline-block; margin-bottom: 2rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .nav-back:hover { text-decoration: underline; }
+        .box { background-color: var(--surface-color); padding: 1.5rem; margin: 1.5rem 0; border-radius: 8px; border: 1px solid var(--border-color); }
+        code { background-color: #0b1121; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fca5a5; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="fase6.html" class="nav-back">← Voltar à Fase 6</a>
+    <h1>Parte 6.3: Memory Management Unit (MMU) e MMIO</h1>
+
+    <div class="box">
+        <h2>1. O Mapa de Memória do RPi 4</h2>
+        <p>No Intel x86 nós utilizávamos instruções de portas (<code>in</code> e <code>out</code>) para controlar hardware. A arquitetura ARM usa <strong>Memory-Mapped I/O (MMIO)</strong>, onde os dispositivos físicos respondem a gravações feitas em endereços de RAM arbitrários.</p>
+        <p>No Raspberry Pi 4 (BCM2711), a base periférica foi drasticamente movida. Enquanto nos Raspberry Pi antigos era em <code>0x3F000000</code>, no RPi 4 a base MMIO começa nos endereços físicos: <code>0xFE000000</code>.</p>
+        <p>Para interagir com o UART, System Timer, Interrupt Controller ou Controlador USB, o Kernel precisa escrever matrizes de bits relativos a este deslocamento de memória: <code>BASE + OFFSET</code>.</p>
+    </div>
+
+    <div class="box">
+        <h2>2. Ativando a MMU (Paging no ARM)</h2>
+        <p>Da mesma forma que construímos a Árvore de Páginas (PML4) no x86_64 usando o registrador CR3, no AArch64 usaremos o <strong>Translation Table Base Register (TTBR0/TTBR1)</strong>.</p>
+        <p>Nossa missão será re-implementar a abstração do nosso arquivo <code>vmm.c</code> e <code>pmm.c</code> atual.</p>
+        <ul>
+            <li>Configurar o Memory Attribute Indirection Register (<code>MAIR_EL1</code>) com as políticas de cache (Memória Normal vs Memória de Dispositivo).</li>
+            <li><strong>Isolamento Crítico:</strong> Endereços que apontam para a placa de memória (RAM) recebem cache L1/L2 para extrema velocidade. Endereços que apontam para o MMIO (<code>0xFE000000</code>) <em>obrigatoriamente</em> deverão ser mapeados como <em>"Device Memory - Strongly Ordered"</em> para que a CPU não emita leituras antecipadas que poderiam dessincronizar transistores sensíveis da placa mãe do Raspberry Pi.</li>
+            <li>Habilitar as quebras de barreira de memória via assembly puro (<code>isb</code>, <code>dmb</code> e <code>dsb</code>).</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS OS - Documentação Central</title>
+
+    <!-- Mermaid.js para diagramas -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-strong: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #60a5fa;
+            --link-color: #38bdf8;
+            --code-bg: #0b1121;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--text-strong);
+            margin: 0;
+            font-size: 3rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--accent-color);
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h2 {
+            color: var(--text-strong);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-top: 3rem;
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            border-color: var(--accent-color);
+        }
+
+        .card h3 {
+            color: var(--text-strong);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            margin-top: 0;
+        }
+
+        .card p {
+            color: var(--text-color);
+            font-size: 0.95rem;
+        }
+        
+        .card a {
+            display: inline-block;
+            margin-top: 10px;
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .card a:hover {
+            text-decoration: underline;
+        }
+        
+        ul.links-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+        
+        ul.links-list li {
+            margin-bottom: 8px;
+        }
+        
+        ul.links-list li a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: normal;
+        }
+        
+        ul.links-list li a:hover {
+            text-decoration: underline;
+            color: var(--accent-hover);
+        }
+        
+        ul.links-list li::before {
+            content: "» ";
+            color: var(--border-color);
+        }
+
+        .diagram-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            text-align: center;
+        }
+    </section>
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Portal de Documentação LISP-DOS</h1>
+    <p>Índice Mestre de Arquitetura, Manuais e Códigos Fonte</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>Visão Global do Ecossistema</h2>
+        <p>Bem-vindo ao LISP-DOS, um sistema operacional minimalista experimental operando em Long Mode (64-bits). Abaixo está o sumário de navegação com links diretos para todos os sub-módulos da nossa infraestrutura, divididos em lógica, abstrações e programas de espaço de usuário.</p>
+
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph TD
+                    ROOT((Portal de Documentação))
+                    
+                    subgraph Guias de Desenvolvimento
+                        DEV[Guia do Desenvolvedor]
+                        MEM[Gerenciamento de Memória]
+                        SYS[Sistema de Syscalls e ABI]
+                        FAT[Sistema de Arquivos FAT16]
+                        STR[Standard Library Strings]
+                    end
+                    
+                    subgraph Referência de Códigos Fontes
+                        SRC[Source Code Hub]
+                        HAL[Hardware Abstraction Layer]
+                        KCORE[Kernel Core]
+                        FS[Filesystem VFS]
+                        APP[Aplicações Usermode]
+                    end
+                    
+                    subgraph Aprofundamento Arquitetural
+                        VGAA[Arquitetura Gráfica e VGA]
+                        VGAD[Módulo de Vídeo HAL]
+                    end
+
+                    ROOT --> DEV
+                    ROOT --> SRC
+                    ROOT --> VGAA
+                    
+                    DEV --> MEM
+                    DEV --> SYS
+                    DEV --> FAT
+                    DEV --> STR
+                    
+                    SRC --> HAL
+                    SRC --> KCORE
+                    SRC --> FS
+                    SRC --> APP
+                    
+                    VGAA -.-> VGAD
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Navegação Centralizada</h2>
+        
+        <div class="grid-cards">
+            
+            <!-- Módulo 1 -->
+            <div class="card">
+                <h3>🛠️ Guias de Desenvolvimento</h3>
+                <p>O Manual Geral de arquitetura com o Lifecycle do Kernel, regras de privilégio Ring 0/Ring 3, e o fluxo de vida do Limine Bootloader.</p>
+                <a href="dev-guide-html/index.html">Ir para Guia do Desenvolvedor</a>
+                <hr style="border:0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+                <ul class="links-list">
+                    <li><a href="dev-guide-html/memory.html">Gerenciamento de Memória (PMM/VMM/Heap)</a></li>
+                    <li><a href="dev-guide-html/syscall.html">Interface Syscalls e Proteção ABI</a></li>
+                    <li><a href="dev-guide-html/fat16.html">Tratamento do Sistema FAT16</a></li>
+                    <li><a href="dev-guide-html/string.html">Libc Customizada e Tratamento de Strings</a></li>
+                </ul>
+            </div>
+
+            <!-- Módulo 2 -->
+            <div class="card">
+                <h3>📺 Gráficos, Vídeo e VGA</h3>
+                <p>Guias ultra-específicos descrevendo como manipulamos Framebuffers no modo de 64-bits com emulação de fontes 8x8 (sem o BIOS tradicional).</p>
+                <a href="dev-guide/vga_architecture.html">Arquitetura Completa de Vídeo (Pipeline)</a>
+                <hr style="border:0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+                <ul class="links-list">
+                    <li><a href="doc-sources/vga_video.html">Referências de Fonte da API HAL de Vídeo</a></li>
+                </ul>
+            </div>
+
+            <!-- Módulo 3 -->
+            <div class="card">
+                <h3>💻 Documentação do Código Fonte</h3>
+                <p>Um mapa abrangente das implementações de baixo nível contidas nas pastas <code>src/</code>.</p>
+                <a href="doc-sources/index.html">Source Code Index</a>
+                <hr style="border:0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+                <ul class="links-list">
+                    <li><a href="doc-sources/kernel_core.html">Kernel Core (main.c, process.c)</a></li>
+                    <li><a href="doc-sources/hal.html">Hardware Abstraction Layer (HAL)</a></li>
+                    <li><a href="doc-sources/filesystem.html">VFS e Filesystem Drivers</a></li>
+                    <li><a href="doc-sources/applications.html">Aplicações LISP-DOS (Editor, LISP)</a></li>
+                </ul>
+            </div>
+
+            <!-- Módulo 4 -->
+            <div class="card">
+                <h3>🛠️ Ferramentas LISP-DOS</h3>
+                <p>Detalha o comportamento das aplicações portadas para Ring 3 nativo.</p>
+                <a href="doc-sources/tools.html">Ver guia »</a>
+            </div>
+
+            <div class="card" style="border-color: #3b82f6;">
+                <h3 style="color: #3b82f6;">🚀 Roadmap Master</h3>
+                <p>O plano diretor arquitetural para a Fase 2 (Hardware e USB), Fase 3 e evolução para Multitarefa.</p>
+                <a href="roadmap/index.html" style="color: #38bdf8;">Visualizar as Fases »</a>
+            </div>
+
+        </div>
+    </section>
+    
+    <footer style="text-align: center; margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: var(--border-color);">
+        <p>LISP-DOS OS - Antigravity Agent Coding Assistant</p>
+    </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Fase 4 (Gráficos)</title>
+    <style>
+        :root { --bg-color: #0f172a; --surface-color: #1e293b; --border-color: #334155; --text-color: #cbd5e1; --text-strong: #f8fafc; --accent-color: #f59e0b; --link-color: #fbbf24; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        h1, h2, h3 { color: var(--text-strong); }
+        h1 { font-size: 2.5rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; }
+        .nav-back { display: inline-block; margin-bottom: 2rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .nav-back:hover { text-decoration: underline; }
+        .task-box { background-color: var(--surface-color); border-left: 4px solid var(--accent-color); padding: 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; }
+        code { background-color: #0b1121; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fcd34d; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="nav-back">← Voltar ao Roadmap</a>
+    <h1>Fase 4: Ambientes Gráficos e APIs Avançadas</h1>
+    <p>Até aqui, o LISP-DOS fingiu operar num modo de texto simulado. A Fase 4 desacorrenta todo o potencial da placa de vídeo de 32-bits que já está alocada via Framebuffer, expondo-a para aplicações em espaço de usuário desenharem janelas e gráficos.</p>
+
+    <div class="task-box">
+        <h2>Parte 4.1: API de Desenho no Kernel</h2>
+        <p><strong>Problema Atual:</strong> O driver <code>vga.c</code> contém apenas rotinas para copiar letras minúsculas (fontes) no framebuffer. Não existem rotinas para plotar geometria matemática.</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Implementar o algoritmo de <strong>Bresenham</strong> para desenhar linhas puras sem serrilhamento através do framebuffer de vídeo com <code>void vga_draw_line(x0, y0, x1, y1, color)</code>.</li>
+            <li>Adicionar suporte a elipses, retângulos coloridos e preenchimentos (*Fill routines*).</li>
+            <li>Expor as primitivas via banco de Syscalls (ex: <code>sys_draw_rect</code>) e fornecer a resolução máxima detectada da placa (`sys_get_resolution`).</li>
+        </ul>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 4.2: Integração com o Interpretador LISP</h2>
+        <p><strong>Problema Atual:</strong> O interpretador só é capaz de somar números e exibi-los no modo texto.</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Registrar palavras-chave nativas em <code>lisp.c</code>, como as famosas funções da Linguagem Logo original (tartaruga geométrica). Exemplo: <code>(draw-line 0 0 100 100)</code>.</li>
+            <li>Permitir que usuários escrevam scripts matemáticos sofisticados (*fractais*, simulações físicas) salvos no FAT16, que ao serem executados pintam imagens gloriosas na tela.</li>
+        </ul>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 4.3: Driver de Mouse e UI</h2>
+        <p><strong>Problema Atual:</strong> Navegar em modo gráfico requer um dispositivo apontador de hardware.</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Utilizando o Barramento xHCI (construído incansavelmente na Fase 2), extrair a classe de descritor `HID Mouse` para reportes de interrupções de movimento relativas (Eixos X, Y e botões).</li>
+            <li>Atualizar uma ponteiro em formato de "Seta Branca" sobre os pixels da tela no Hardware Layer sempre que a interrupção do controlador for ativada e disparar eventos assíncronos (`Event Queues`) para os processos em User Space absorverem cliques.</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

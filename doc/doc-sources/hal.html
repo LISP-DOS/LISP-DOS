@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAL - LISP-DOS</title>
+    <style>
+        :root { --bg-color: #0f172a; --text-color: #cbd5e1; --accent-color: #38bdf8; --card-bg: #1e293b; --border-color: #334155; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; margin: 0; padding: 0; }
+        header { background-color: var(--card-bg); padding: 2rem; border-bottom: 1px solid var(--border-color); }
+        h1 { color: #fff; margin: 0; }
+        .nav { margin-top: 1rem; }
+        .nav a { color: var(--accent-color); text-decoration: none; margin-right: 1rem; }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .module { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
+        .module h2 { color: var(--accent-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        code { background-color: #000; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; color: #a5b4fc; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Camada de Abstração de Hardware (HAL)</h1>
+            <div class="nav"><a href="index.html">&larr; Voltar para a Página Inicial</a></div>
+        </div>
+    </header>
+    <div class="container">
+        
+        <div class="module">
+            <h2>1. CPU e Interrupções (gdt.c, idt.c, pic.c, interrupts.S)</h2>
+            <p>O funcionamento correto do kernel x86_64 depende de algumas tabelas da CPU:</p>
+            <ul>
+                <li><strong>GDT (Global Descriptor Table):</strong> Em <code>gdt.c</code>, o sistema configura a memória no modelo "flat", permitindo acesso total do kernel aos endereços de memória sem segmentação limitante.</li>
+                <li><strong>IDT (Interrupt Descriptor Table):</strong> Definida em <code>idt.c</code>, mapeia os vetores de erro (exceções, como Divisão por Zero) e requisições de hardware para rotinas de software.</li>
+                <li><strong>PIC (Programmable Interrupt Controller):</strong> O arquivo <code>pic.c</code> reprograma as interrupções base do hardware (IRQs). O timer (IRQ0) e o teclado (IRQ1) são mapeados em vetores na IDT que não colidem com as exceções de CPU (geralmente vetores 32+).</li>
+                <li><strong>interrupts.S:</strong> Contém stubs em código Assembly para salvar os registradores da CPU de forma segura, chamar a rotina em C (ex: o driver de teclado) e restaurar o contexto logo após.</li>
+            </ul>
+        </div>
+
+        <div class="module">
+            <h2>2. Dispositivos de Entrada e Saída (I/O)</h2>
+            <p>Para ler e escrever dados nas portas de I/O do x86 (teclado e discos IDE), o sistema utiliza funções wrapper definidas em <code>io.h</code> que executam instruções assembly <code>inb</code>, <code>inw</code>, <code>outb</code>, <code>outw</code>.</p>
+        </div>
+
+        <div class="module">
+            <h2>3. vga.c e font8x8_basic.h (Driver de Vídeo)</h2>
+            <p>O arquivo <code>vga.c</code> abstrai o acesso à tela, oferecendo funções confortáveis como <code>vga_print</code> e <code>vga_putchar</code>.</p>
+            <p>Ele trata o texto do console de duas formas (dependendo do que o Limine oferece): se for um framebuffer gráfico, o arquivo <code>font8x8_basic.h</code> contém um mapa de bits de 8x8 pixels para cada caractere ASCII, permitindo que a função "desenhe" as letras píxel por píxel na tela gráfica.</p>
+        </div>
+
+        <div class="module">
+            <h2>4. keyboard.c (Driver de Teclado PS/2)</h2>
+            <p>Conectado ao canal IRQ1, esse driver recebe um byte da porta 0x60 toda vez que uma tecla é pressionada ou solta. O <code>keyboard.c</code> decodifica o 'scancode' recebido em um caractere ASCII correspondente, gerenciando modificadores como Shift e CapsLock.</p>
+            <p>O kernel consome essas letras usando <code>keyboard_getchar()</code>, que bloqueia o loop principal até que uma tecla esteja disponível no buffer.</p>
+        </div>
+
+        <div class="module">
+            <h2>5. ata.c (Driver de Disco IDE)</h2>
+            <p>Este arquivo fornece leitura e escrita bruta em LBA (Logical Block Addressing) nos discos conectados às portas PATA/SATA do computador, usando o modo PIO legado através das portas de I/O 0x1F0-0x1F7. Sem isso, os sistemas de arquivos não teriam meio de persistir dados.</p>
+        </div>
+
+    </div>
+</body>
+</html>

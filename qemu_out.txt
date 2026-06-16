@@ -1,0 +1,16 @@
+limine: Loading executable `boot():/kernel/kernel.elf`...
+limine: Loading module `boot():/boot/ramdisk.tar`...
+[BOOT] serial_init done
+Inicializando Hardware e Memoria...
+[BOOT] vga_init done
+[BOOT] gdt_init done
+[BOOT] idt_init done
+[BOOT] fpu_init done
+[BOOT] syscall_init done
+[BOOT] pic_remap done
+[BOOT] pmm_init done
+[BOOT] vmm_init done
+[BOOT] heap_init done
+TarFS: Unidade C: (Initramfs) montada com sucesso.
+[BOOT] tarfs_init done
+[BOOT] fat16_init done

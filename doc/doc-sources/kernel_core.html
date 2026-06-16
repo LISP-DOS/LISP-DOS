@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core do Kernel - LISP-DOS</title>
+    <style>
+        :root { --bg-color: #0f172a; --text-color: #cbd5e1; --accent-color: #38bdf8; --card-bg: #1e293b; --border-color: #334155; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; margin: 0; padding: 0; }
+        header { background-color: var(--card-bg); padding: 2rem; border-bottom: 1px solid var(--border-color); }
+        h1 { color: #fff; margin: 0; }
+        .nav { margin-top: 1rem; }
+        .nav a { color: var(--accent-color); text-decoration: none; margin-right: 1rem; }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .module { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
+        .module h2 { color: var(--accent-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        code { background-color: #000; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; color: #a5b4fc; }
+        pre { background-color: #000; padding: 1rem; border-radius: 8px; overflow-x: auto; color: #a5b4fc; border: 1px solid var(--border-color); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Core do Kernel</h1>
+            <div class="nav"><a href="index.html">&larr; Voltar para a Página Inicial</a></div>
+        </div>
+    </header>
+    <div class="container">
+        
+        <div class="module">
+            <h2>1. main.c - O Ponto de Entrada</h2>
+            <p>O arquivo <code>main.c</code> é responsável por iniciar o kernel após o carregamento pelo Limine. A função <code>_start()</code> coordena a inicialização do hardware, memória e os sistemas de arquivos.</p>
+            <p><strong>Principais Funcionalidades:</strong></p>
+            <ul>
+                <li>Inicialização de Vídeo (<code>vga_init</code>).</li>
+                <li>Configuração da GDT e IDT (<code>gdt_init</code>, <code>idt_init</code>) para segmentação e interrupções.</li>
+                <li>Inicialização de memória física e dinâmica (<code>pmm_init</code>, <code>heap_init</code>).</li>
+                <p>O Loader é encarregado de parsear os cabeçalhos <code>Elf64_Ehdr</code> e <code>Elf64_Phdr</code> do executável. Ao contrário do DOS clássico que apenas alocava um segmento COM/EXE bruto, o LISP-DOS realiza uma inspeção forte: valida assinaturas (Magic Numbers), calcula matematicamente as estruturas para prevenir <em>Buffer Over-Reads</em> se o ELF mentir seus offsets, e nega categoricamente a inicialização se o binário apontar o seu <code>e_entry</code> para o Kernel Space. Só depois dessa validação ele mapeia os segmentos na memória virtual com as flags <code>PAGE_USER | PAGE_WRITE</code>.</p>
+                <li>Inicialização de drivers de disco (<code>tarfs_init</code>, <code>fat16_init</code>).</li>
+                <li><strong>O Loop do Shell:</strong> Um loop infinito onde o kernel exibe o prompt <code>C:\&gt;</code>, aguarda entradas do <code>keyboard_getchar()</code> e despacha os comandos (como <code>echo</code>, <code>cls</code>, <code>dir</code>, <code>edit</code> e <code>lisp</code>).</li>
+            </ul>
+        </div>
+
+        <div class="module">
+            <h2>2. pmm.c - Gerenciador de Memória Física</h2>
+            <p>O PMM (Physical Memory Manager) lê o mapa de memória fornecido pelo bootloader (através das tags do Limine) para entender quais endereços físicos de RAM estão disponíveis na máquina.</p>
+            <p><strong>Funcionamento:</strong></p>
+            <p>O <code>pmm</code> divide a memória usável em blocos de 4KB (páginas). Para rastrear essas páginas, ele normalmente utiliza um mapa de bits (bitmap) ou uma lista encadeada, garantindo que alocações do kernel não sobrescrevam áreas vitais, como o próprio código do kernel, framebuffers ou módulos carregados (initramfs).</p>
+        </div>
+
+        <div class="module">
+            <h2>3. heap.c - Gerenciador de Memória Dinâmica</h2>
+            <p>O LISP-DOS não conta com as bibliotecas do C padrão (`stdlib.h`). Logo, as funções <code>malloc</code> e <code>free</code> são implementadas manualmente no <code>heap.c</code>.</p>
+            <p><strong>Funcionamento:</strong></p>
+            <p>Ele recebe uma grande região de memória inicializada pelo PMM e gerencia pedaços menores solicitados pelas aplicações (como o editor de textos ou os nós/listas do interpretador LISP). Cada bloco no heap contém um cabeçalho escondido indicando seu tamanho e se está livre ou ocupado. O comando <code>free</code> junta blocos livres adjacentes para evitar fragmentação.</p>
+        </div>
+    </div>
+</body>
+</html>

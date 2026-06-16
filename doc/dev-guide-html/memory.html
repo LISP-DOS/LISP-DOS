@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Memória - LISP-DOS Dev Guide</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-strong: #f8fafc;
+            --accent-color: #f59e0b;
+            --accent-hover: #fbbf24;
+            --danger-color: #f43f5e;
+            --code-bg: #0b1121;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--text-strong);
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h2 {
+            color: var(--text-strong);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+        }
+
+        h3 {
+            color: var(--accent-color);
+            margin-top: 2rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: var(--accent-hover);
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #e2e8f0;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--surface-color);
+            color: var(--text-strong);
+            font-weight: 600;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--accent-hover);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Gerenciamento de Memória</h1>
+    <p>Documentação Técnica do Kernel LISP-DOS</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>Visão Geral da Arquitetura</h2>
+        <p>A alocação de memória no LISP-DOS é dividida em três pilares arquiteturais altamente desacoplados: O Gerenciador Físico (PMM), o Gerenciador Virtual (VMM) e a Alocação Dinâmica do Kernel (Heap/Kalloc). Diferente do real mode dos sistemas antigos que acessavam segmentos diretos de 16-bits, o LISP-DOS roda integralmente em modo longo (64-bits) e faz uso extensivo do HHDM (Higher Half Direct Map).</p>
+    </section>
+
+    <section>
+        <h2>1. PMM (Physical Memory Manager)</h2>
+        <p>Localizado em <code>src/kernel/pmm.c</code>. É a base granular que toma controle absoluto sobre os pentes de RAM reais instalados no computador, convertendo as seções relatadas como "Livres" pelo Bootloader (Limine) em um gigantesco Bitmap (mapa de bits).</p>
+
+        <div class="card">
+            <h3>Inicialização e Estrutura</h3>
+            <p>A função <code>pmm_init()</code> itera o array de resposta do protocolo Limine. Toda página de memória mede exatos <strong>4096 bytes (4 KB)</strong>. O Bitmap armazena <code>1</code> para páginas alocadas/reservadas e <code>0</code> para páginas livres prontas para uso.</p>
+        </div>
+
+        <div class="card">
+            <h3>Funções Principais</h3>
+            <ul>
+                <li><code>void* pmm_alloc_page()</code>: Procura sequencialmente o primeiro bit '0' no bitmap de memória, marca-o como '1' (ocupado) e retorna seu endereço de Memória Física base.</li>
+                <li><code>void* pmm_alloc_pages(size_t count)</code>: Procura por uma fileira contínua e ininterrupta de <code>count</code> páginas para buffers que requerem contiguidade a nível físico (muito utilizado em transfers de DMA que não entendem memória virtual).</li>
+                <li><code>void pmm_free_page(void* ptr)</code>: Desmarca matematicamente a página devolvendo a posse da RAM ao sistema. Operação assintótica em <code>O(1)</code>.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>2. VMM (Virtual Memory Manager)</h2>
+        <p>Localizado em <code>src/kernel/vmm.c</code>. Opera exclusivamente as árvores de paginação de 4 níveis introduzidas pelos processadores x86_64 (PML4, PDPT, PD, PT).</p>
+
+        <div class="card">
+            <h3>O Mapeamento HHDM</h3>
+            <p>Por questões de isolamento e simplicidade no tráfego Kernel-Ring, toda a Memória Física RAM existente é rigorosamente espelhada na Memória Virtual a partir de um offset fixo altíssimo. O Kernel acessa dados do User-Space injetando a constante do HHDM, ignorando assim a necessidade de usar os antigos seletores <code>FS/GS</code> da arquitetura x86.</p>
+        </div>
+
+        <div class="card">
+            <h3>Funções Principais <span class="badge">Proteção de Anéis</span></h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Função</th>
+                            <th>Propósito</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>vmm_init()</code></td><td>Inicia o PageMap raiz (Kernel). Identity map dos primeiros 4GB (para fallback) e carrega as bases MMIO do Hardware.</td></tr>
+                        <tr><td><code>vmm_new_pagemap()</code></td><td>Usada no modulo <code>process.c</code>. Instancia uma nova PML4 (diretório isolado) preenchendo as entradas Top-Half (Kernel) e limpando o Bottom-Half, conferindo total isolamento para um novo programa de modo usuário.</td></tr>
+                        <tr><td><code>vmm_map_page()</code></td><td>Amarra virtual-físico. Navega na árvore (criando sub-tabelas PDPT/PD/PT sob demanda usando <code>pmm_alloc_page()</code>) e injeta o flag <code>PAGE_USER</code> ou <code>PAGE_WRITE</code>.</td></tr>
+                        <tr><td><code>vmm_switch_pagemap()</code></td><td>Carrega as instruções assembly para gravar no registrador <code>CR3</code> instruindo a MMU da CPU a aplicar o novo layout virtual. Invalida os TLBs.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Validadores de Segurança (Syscalls)</h3>
+            <p>O VMM é munido de validadores preventivos em <code>vmm_check_user_ptr</code> e <code>vmm_check_user_string</code>. Elas percorrem toda a árvore do CR3 ativo validando se o ponteiro vindo de fora possui efetivamente a bitmask <code>PAGE_USER</code> e <code>PAGE_PRESENT</code>, evitando exploração de acessos maliciosos.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>3. Kernel Heap (Alocador Dinâmico)</h2>
+        <p>Localizado em <code>src/kernel/heap.c</code>. É o provedor central das famosas rotinas <code>kmalloc</code> e <code>kfree</code> (equivalentes ao padrão libc, mas reservadas somente ao Kernel Space).</p>
+
+        <div class="card">
+            <h3>Algoritmo de Lista Encadeada (Linked-List Block)</h3>
+            <p>Durante a <code>heap_init()</code>, uma série contínua de páginas do PMM é requisitada e transformada em uma grande arena. O heap implementa blocos metrificados possuindo Cabeçalhos <em>(Headers)</em> escondidos, permitindo fatiamentos complexos.</p>
+            <pre><code>struct heap_block {
+    size_t size;           // Tamanho dos dados utilizáveis
+    int free;              // Booleano indicando vacância
+    struct heap_block* next; // Ponteiro para o nó vizinho
+};</code></pre>
+        </div>
+
+        <div class="card">
+            <h3>Dinâmica de Aglutinação (Merge)</h3>
+            <p>Para evitar a tão danosa "Fragmentação do Heap" (onde pequenos buracos estraçalham as alocações), a função <code>kfree</code> checa matematicamente se o bloco <code>next</code> vizinho ou anterior também está livre. Caso esteja, funde (merges) as barreiras convertendo-os de volta em um grande bloco consolidado (Deflacting).</p>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

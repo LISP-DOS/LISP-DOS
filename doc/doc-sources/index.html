@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Documentação do Código Fonte</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #cbd5e1;
+            --accent-color: #38bdf8;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        h1 {
+            color: #fff;
+            margin: 0 0 0.5rem 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+            border-color: var(--accent-color);
+        }
+        .card h2 {
+            color: var(--accent-color);
+            margin-top: 0;
+        }
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>LISP-DOS</h1>
+        <p>Documentação Oficial do Código Fonte</p>
+    </header>
+    <div class="container">
+        <p>Bem-vindo à documentação detalhada do código fonte do LISP-DOS. Aqui você encontrará explicações sobre a arquitetura, as abstrações de hardware, o núcleo do sistema e os aplicativos embutidos.</p>
+        
+        <div class="grid">
+            <div class="card">
+                <h2><a href="kernel_core.html">Core do Kernel</a></h2>
+                <p>O coração do LISP-DOS. Detalhes sobre o `main.c`, inicialização e gerenciamento físico e dinâmico de memória (`pmm.c`, `heap.c`).</p>
+            </div>
+            <div class="card">
+                <h2><a href="hal.html">Hardware Abstraction Layer (HAL)</a></h2>
+                <p>Interação direta com o hardware da máquina: VGA, GDT, IDT, interrupções (PIC), teclado PS/2 e abstrações de I/O.</p>
+            </div>
+            <div class="card">
+                <h2><a href="filesystem.html">Sistemas de Arquivos</a></h2>
+                <p>Explicação de como o sistema gerencia arquivos e discos usando o Initramfs baseado em `TAR` e persistência via `FAT16`.</p>
+            </div>
+            <div class="card">
+                <h2><a href="applications.html">Aplicações Embutidas</a></h2>
+                <p>Detalhes sobre a implementação do interpretador `LISP` e do editor de texto embutido com suporte a modo de inserção e normal.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

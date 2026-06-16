@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Syscall - LISP-DOS Dev Guide</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-strong: #f8fafc;
+            --accent-color: #38bdf8;
+            --accent-hover: #7dd3fc;
+            --danger-color: #f43f5e;
+            --code-bg: #0b1121;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--text-strong);
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h2 {
+            color: var(--text-strong);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+        }
+
+        h3 {
+            color: var(--accent-color);
+            margin-top: 2rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .syscall-number {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            font-weight: bold;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: var(--accent-hover);
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #e2e8f0;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--surface-color);
+            color: var(--text-strong);
+            font-weight: 600;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .warning {
+            background-color: rgba(244, 63, 94, 0.1);
+            border-left: 4px solid var(--danger-color);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Módulo Syscall (System Calls)</h1>
+    <p>Documentação Técnica do Kernel LISP-DOS</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>Visão Geral da Arquitetura</h2>
+        <p>O módulo de Syscalls no LISP-DOS provê a interface segura entre o espaço de usuário (Ring 3) e o Kernel (Ring 0). A arquitetura foi projetada espelhando o padrão <strong>ABI do Linux x86_64</strong>, utilizando a instrução nativa <code>syscall</code> e <code>sysretq</code> de transição rápida.</p>
+        
+        <div class="card">
+            <h3>Convenção de Chamada (ABI)</h3>
+            <p>Quando um programa do usuário invoca uma rotina de sistema, os registradores devem ser configurados na seguinte ordem:</p>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Registrador</th>
+                            <th>Propósito</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>RAX</code></td><td>Número da Syscall (ID)</td></tr>
+                        <tr><td><code>RDI</code></td><td>1º Argumento</td></tr>
+                        <tr><td><code>RSI</code></td><td>2º Argumento</td></tr>
+                        <tr><td><code>RDX</code></td><td>3º Argumento</td></tr>
+                        <tr><td><code>R10</code></td><td>4º Argumento</td></tr>
+                        <tr><td><code>R8</code></td><td>5º Argumento</td></tr>
+                        <tr><td><code>R9</code></td><td>6º Argumento</td></tr>
+                        <tr><td><code>RCX</code> & <code>R11</code></td><td>Endereço de Retorno (RIP) e RFLAGS</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p><strong>Preservação de Estado:</strong> Durante a transição, a instrução <code>syscall</code> destrói o conteúdo de <code>RCX</code> (salvando o RIP) e <code>R11</code> (salvando o RFLAGS). No entanto, o wrapper em Assembly do Kernel (<code>syscall_asm.S</code>) atua proativamente protegendo o restante dos registradores. Ele empilha explicitamente os registradores temporários da ABI (como <code>%r8</code> e <code>%r9</code>) e os demais parâmetros antes de transferir o contexto para o manipulador principal em C. Isso elimina o risco do Kernel corromper referências do espaço de usuário, como ponteiros alocados na <code>.bss</code> (evitando o infame Page Fault de violação de segurança do LISP).</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Segurança e Isolamento (VMM Checker)</h2>
+        <div class="warning">
+            <strong>Proteção de Memória Rigorosa:</strong> O Kernel nunca confia em ponteiros passados pelo Ring 3. Todo endereço de memória fornecido sofre validação estrita antes da leitura/escrita.
+        </div>
+        <p>As funções do Gerenciador de Memória Virtual (VMM) atuam como Gatekeepers em <code>syscall.c</code>:</p>
+        <ul>
+            <li><code>vmm_check_user_ptr(vaddr, size, write_required)</code>: Garante que o buffer exista no PML4, não esteja no espaço do Kernel e possua as permissões corretas.</li>
+            <li><code>vmm_check_user_string(vaddr)</code>: Navega de forma segura pela paginação do usuário verificando o terminador <code>NULL (\0)</code> sem extrapolar limites.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Lista de Chamadas de Sistema</h2>
+
+        <!-- Entrada 1 -->
+        <div class="card">
+            <h3><span class="syscall-number">01</span> sys_write</h3>
+            <p><strong>Assinatura:</strong> <code>void sys_write(const char *str)</code></p>
+            <p><strong>Descrição:</strong> Imprime uma string terminada em nulo no terminal VGA.</p>
+        </div>
+
+        <!-- Entrada 2 -->
+        <div class="card">
+            <h3><span class="syscall-number">02</span> sys_clear</h3>
+            <p><strong>Assinatura:</strong> <code>void sys_clear(void)</code></p>
+            <p><strong>Descrição:</strong> Limpa o buffer de vídeo do terminal VGA e reposiciona o cursor.</p>
+        </div>
+
+        <!-- Entrada 3 -->
+        <div class="card">
+            <h3><span class="syscall-number">03</span> sys_set_cursor</h3>
+            <p><strong>Assinatura:</strong> <code>void sys_set_cursor(int row, int col)</code></p>
+            <p><strong>Descrição:</strong> Modifica as coordenadas de cursor através de hardware VGA ports.</p>
+        </div>
+
+        <!-- Entrada 4 -->
+        <div class="card">
+            <h3><span class="syscall-number">04</span> sys_putchar</h3>
+            <p><strong>Assinatura:</strong> <code>void sys_putchar(char c)</code></p>
+            <p><strong>Descrição:</strong> Imprime e avança o offset. Lida com quebras de linha e rolagem de tela.</p>
+        </div>
+
+        <!-- Entrada 5 -->
+        <div class="card">
+            <h3><span class="syscall-number">05</span> sys_set_color</h3>
+            <p><strong>Assinatura:</strong> <code>void sys_set_color(uint32_t bg, uint32_t fg)</code></p>
+            <p><strong>Descrição:</strong> Define paleta de background e foreground.</p>
+        </div>
+
+        <!-- Entrada 6 -->
+        <div class="card">
+            <h3><span class="syscall-number">06</span> sys_get_max_rows</h3>
+            <p><strong>Assinatura:</strong> <code>int sys_get_max_rows(void)</code></p>
+            <p><strong>Descrição:</strong> Retorna o número de linhas disponíveis no terminal texto (padrão 25).</p>
+        </div>
+
+        <!-- Entrada 7 -->
+        <div class="card">
+            <h3><span class="syscall-number">07</span> sys_keyboard_getchar</h3>
+            <p><strong>Assinatura:</strong> <code>char sys_keyboard_getchar(void)</code></p>
+            <p><strong>Descrição:</strong> Bloqueia a execução do usuário aguardando input via PS/2 IRQ1. O Kernel lida proativamente com a CPU usando a dupla <code>sti / hlt</code> e delays de hardware de 1 instrução para impedir race conditions. Como a instrução <code>syscall</code> desabilita IRQs globalmente ao entrar em Ring 0, este mecanismo é vital para impedir que a CPU congele em deadlocks infinitos esperando pelo teclado.</p>
+        </div>
+
+        <!-- Entrada 8 -->
+        <div class="card">
+            <h3><span class="syscall-number">08</span> sys_fat16_read_file</h3>
+            <p><strong>Assinatura:</strong> <code>int sys_fat16_read_file(const char* filename, uint8_t* buffer)</code></p>
+            <p><strong>Descrição:</strong> Lê e copia clusters de arquivo de disco físico para user-space buffer com bounds-checking.</p>
+        </div>
+
+        <!-- Entrada 9 -->
+        <div class="card">
+            <h3><span class="syscall-number">09</span> sys_fat16_write_file</h3>
+            <p><strong>Assinatura:</strong> <code>int sys_fat16_write_file(const char* filename, const uint8_t* buffer, uint32_t size)</code></p>
+            <p><strong>Descrição:</strong> Escreve novos arquivos no diretório root alocando blocos no FAT.</p>
+        </div>
+
+        <!-- Entrada 10 -->
+        <div class="card">
+            <h3><span class="syscall-number">10</span> sys_fat16_get_file_size</h3>
+            <p><strong>Assinatura:</strong> <code>int sys_fat16_get_file_size(const char* filename)</code></p>
+            <p><strong>Descrição:</strong> Captura metadados para preparar ponteiros de memória em alocação dinâmica do usuário.</p>
+        </div>
+
+        <!-- Entrada 60 -->
+        <div class="card">
+            <h3><span class="syscall-number">60</span> sys_exit</h3>
+            <p><strong>Assinatura:</strong> <code>void sys_exit(void)</code></p>
+            <p><strong>Descrição:</strong> Encerra subrotina Ring 3 e devolve a thread ao Shell do LISP-DOS.</p>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

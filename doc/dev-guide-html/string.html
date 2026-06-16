@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo String & Memory - LISP-DOS Dev Guide</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-strong: #f8fafc;
+            --accent-color: #8b5cf6;
+            --accent-hover: #a78bfa;
+            --danger-color: #f43f5e;
+            --code-bg: #0b1121;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--text-strong);
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h2 {
+            color: var(--text-strong);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+        }
+
+        h3 {
+            color: var(--accent-color);
+            margin-top: 2rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: var(--accent-hover);
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #e2e8f0;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--surface-color);
+            color: var(--text-strong);
+            font-weight: 600;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .note {
+            background-color: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .type-badge {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Módulo String & Memory</h1>
+    <p>Documentação Técnica do Kernel LISP-DOS</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>Visão Geral</h2>
+        <div class="note">
+            <strong>Independência (Freestanding):</strong> Como o Kernel LISP-DOS é compilado com as flags <code>-fno-builtin</code> e <code>-ffreestanding</code>, ele não possui acesso à biblioteca padrão do C (<code>libc</code>). O módulo <code>string.c</code> prove exatamente a base fundamental de manipulação de bytes que o Kernel precisa para inicializar estruturas, comparar nomes de arquivos no FAT16 e copiar buffers de memória.
+        </div>
+        <p>A biblioteca implementa operações clássicas de ponteiros de modo linear e contínuo. As operações são intencionalmente minimalistas em linguagem C sem otimizações Assembly SIMD/AVX (para não poluir o Kernel e manter compatibilidade cruzada e arquitetural).</p>
+    </section>
+
+    <section>
+        <h2>Funções de Manipulação de Memória</h2>
+        <p>Ferramentas responsáveis por manipular bytes brutos e estruturas (Structs) sem distinção do conteúdo, tratando tudo como blocos hexadecimais inexpressivos (tipo <code>uint8_t</code>).</p>
+
+        <div class="card">
+            <h3>memset</h3>
+            <p><strong>Assinatura:</strong> <code><span class="type-badge">void*</span> memset(void *s, int c, size_t n)</code></p>
+            <p>Preenche uma área de memória específica com um byte constante.</p>
+            <ul>
+                <li><strong><code>s</code>:</strong> Ponteiro base para o bloco de memória.</li>
+                <li><strong><code>c</code>:</strong> Valor do byte a ser repetido (internamente feito um cast para <code>uint8_t</code>).</li>
+                <li><strong><code>n</code>:</strong> Total de bytes consecutivos que serão substituídos.</li>
+            </ul>
+            <p><em>Exemplo de uso:</em> Essencial para zerar páginas HHDM (Higher Half Direct Map) recém alocadas via <code>pmm_alloc_page()</code> ou estruturas da Tabela de Páginas (PML4).</p>
+        </div>
+
+        <div class="card">
+            <h3>memcpy</h3>
+            <p><strong>Assinatura:</strong> <code><span class="type-badge">void*</span> memcpy(void *dest, const void *src, size_t n)</code></p>
+            <p>Copia <code>n</code> bytes absolutos de um endereço de origem para um endereço de destino.</p>
+            <ul>
+                <li><strong>Risco de Overlap:</strong> Diferente de funções avançadas como <code>memmove</code>, esta versão de cópia direta por laço <code>while</code> não possui defesa contra endereços que colidem (overlapping).</li>
+            </ul>
+            <p><em>Exemplo de uso:</em> Cópias rápidas de headers de Syscalls ou transposição de buffers e clusters decodificados do FAT16 para o espaço do usuário (Ring 3).</p>
+        </div>
+
+        <div class="card">
+            <h3>memcmp</h3>
+            <p><strong>Assinatura:</strong> <code><span class="type-badge">int</span> memcmp(const void *s1, const void *s2, size_t n)</code></p>
+            <p>Faz a validação aritmética de dois endereços de memória, comparando-os byte por byte.</p>
+            <p><strong>Retorno:</strong> <code>0</code> se ambos os vetores forem precisamente iguais até o limite <code>n</code>. Caso encontre diferença, retorna a diferença algébrica do primeiro byte discrepante.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Funções de Manipulação de Strings</h2>
+        <p>Focadas primariamente em arrays terminados em nulo (<code>\0</code>), comumente utilizadas para parser de caminhos de arquivos e argumentos.</p>
+
+        <div class="card">
+            <h3>strlen</h3>
+            <p><strong>Assinatura:</strong> <code><span class="type-badge">size_t</span> strlen(const char *s)</code></p>
+            <p>Avança ponteiro byte a byte até localizar um terminador ASCII Nulo (0x00), retornando a contagem escalar exata dos bytes transcorridos.</p>
+        </div>
+
+        <div class="card">
+            <h3>strcmp e strncmp</h3>
+            <p><strong>Assinaturas:</strong> <br>
+            <code><span class="type-badge">int</span> strcmp(const char *s1, const char *s2)</code><br>
+            <code><span class="type-badge">int</span> strncmp(const char *s1, const char *s2, size_t n)</code></p>
+            <p>Avaliam a equivalência entre cadeias de texto, mas com comportamentos baseados no terminador Nulo ao invés de contadores fixos (no caso do <code>strcmp</code>).</p>
+            <ul>
+                <li>O <strong>strcmp</strong> interrompe imediatamente a verificação ao encostar no fim de alguma das strings.</li>
+                <li>O <strong>strncmp</strong> é a versão mais segura, pois impõe uma barreira máxima limitadora de iterações <code>n</code>, blindando o loop de invadir áreas protegidas do Kernel ou gerar vazamentos de memória (Buffer OOB).</li>
+            </ul>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

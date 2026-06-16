@@ -1,0 +1,44 @@
+make -C limine
+make[1]: Entrando no diretório '/mnt/c/Users/wsric/GitHub/MS-DOS/limine'
+
+make[1]: Nada a ser feito para 'all'. 
+make[1]: Saindo do diretório '/mnt/c/Users/wsric/GitHub/MS-DOS/limine'
+
+ld -nostdlib -z max-page-size=0x1000 -static -no-pie -T linker.ld src/kernel/main.o src/hal/vga.o src/hal/gdt.o src/hal/idt.o src/hal/pic.o src/hal/keyboard.o src/kernel/pmm.o src/kernel/vmm.o src/kernel/heap.o src/kernel/tarfs.o src/hal/ata.o src/tools/editor.o src/tools/lisp.o src/kernel/fat16.o src/hal/acpi.o src/hal/pci.o src/hal/usb.o src/hal/serial.o src/kernel/string.o src/kernel/syscall.o src/kernel/process.o src/hal/interrupts.o src/kernel/syscall_asm.o -o kernel.elf
+rm -rf iso_root
+mkdir -p iso_root
+cp kernel.elf limine.conf ramdisk.tar limine/limine-bios.sys limine/limine-bios-cd.bin limine/limine-uefi-cd.bin iso_root/
+mkdir -p iso_root/EFI/BOOT
+cp limine/BOOTX64.EFI iso_root/EFI/BOOT/
+cp limine/BOOTIA32.EFI iso_root/EFI/BOOT/
+xorriso -as mkisofs -b limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table --efi-boot limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label iso_root -o msdos-lisp.iso
+xorriso 1.5.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:msdos-lisp.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data,  242g free
+Added to ISO image: directory '/'='/mnt/c/Users/wsric/GitHub/MS-DOS/iso_root'
+xorriso : UPDATE :      10 files added in 1 seconds
+xorriso : UPDATE :      10 files added in 1 seconds
+xorriso : UPDATE :  31.80% done
+ISO image produced: 2025 sectors
+Written to medium : 2025 sectors at LBA 0
+Writing to 'stdio:msdos-lisp.iso' completed successfully.
+
+./limine/limine bios-install msdos-lisp.iso
+Physical block size of 512 bytes.
+Installing to GPT. Logical block size of 512 bytes.
+Secondary header at LBA 0x1fa3.
+Secondary header valid.
+GPT partition NOT specified. Attempting GPT embedding.
+New maximum count of partition entries: 44.
+Stage 2 to be located at 0x1a00 and 0x3ee000.
+Reminder: Remember to copy the limine-bios.sys file in either
+          the root, /boot, /limine, or /boot/limine directories of
+          one of the partitions on the device, or boot will fail!
+Limine BIOS stages installed successfully!
+gcc -Wall -Wextra -O2 -fno-builtin -fno-stack-protector -ffreestanding -m64 -fno-pic -fno-pie -no-pie -nostdlib src/test/test.c -o test.elf
+mcopy -o -i hdd.img test.elf ::/test.elf
+qemu-system-x86_64 -m 256M -cdrom msdos-lisp.iso -drive file=hdd.img,format=raw,if=ide -boot d -serial stdio -d int -D qemu.log
+qemu: terminating on signal 15 from pid 767 (killall)

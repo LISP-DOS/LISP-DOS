@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitetura de Vídeo e VGA - LISP-DOS</title>
+
+    <!-- Mermaid.js para diagramas -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-strong: #f8fafc;
+            --accent-color: #38bdf8;
+            --accent-hover: #7dd3fc;
+            --danger-color: #f43f5e;
+            --code-bg: #0b1121;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 2.5rem 0;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--text-strong);
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h2 {
+            color: var(--text-strong);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .diagram-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            text-align: center;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: var(--accent-hover);
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+        
+        pre code {
+            padding: 0;
+            color: #e2e8f0;
+        }
+
+        .info {
+            background-color: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Arquitetura do Módulo de Vídeo</h1>
+    <p>Guia de Desenvolvimento e Renderização HAL (Hardware Abstraction Layer)</p>
+</header>
+
+<div class="container">
+
+    <section>
+        <h2>Visão Geral</h2>
+        <div class="info">
+            Diferente dos clones clássicos de 16-bits operando em modo real, o <strong>LISP-DOS em Long Mode (x86_64)</strong> não possui acesso ao Hardware VGA Modo Texto padrão através de ponteiros MMIO em <code>0xB8000</code>. Operamos utilizando a passagem Linear via protocolo Limine.
+        </div>
+        <p>A emulação do console visual acontece através do mapeamento de um Array de Pixels gigante, onde o Kernel calcula as dimensões por software e renderiza os bits decodificando glifos numéricos ASCII (rasterização bit-a-bit) utilizando a lib <code>font8x8_basic.h</code> e aplicando escalas de UI virtual.</p>
+    </section>
+
+    <section>
+        <h2>Diagrama de Fluxo Gráfico (Framebuffer Rendering)</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph TD
+                    subgraph User-Space Ring 3
+                        A[Programa Usermode] -->|sys_write / sys_putchar| SYSCALL(Syscall Gate)
+                    end
+
+                    subgraph Kernel VGA Driver
+                        SYSCALL --> B(vga_putchar)
+                        B --> C{Letra Especial?}
+                        C -->|'\n'| D[Pula linha e Rola Tela]
+                        C -->|'\b'| E[Retrocede Coluna e Apaga Pixel]
+                        C -->|Normal| F[Busca Glifo na Font8x8]
+                    end
+
+                    subgraph Math & Rasterization
+                        F --> G(Matriz de Bits 8x8)
+                        G --> H(Aplica FONT_SCALE x2)
+                        H --> I(Pinta Cores no Buffer de Vídeo)
+                    end
+
+                    subgraph Hardware Linear Framebuffer
+                        I --> LFB[(Limine Framebuffer Address VRAM)]
+                    end
+                    
+                    subgraph Headless Debugging
+                        B -->|Espelhamento| COM1((Porta Serial 0x3F8))
+                    end
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Pipeline de Resolução Matemática</h2>
+        <div class="card">
+            <h3>Calculando o Posicionamento de Renderização</h3>
+            <p>A conversão do cursor de texto virtual para X e Y na tela de pixels físicos obedece a equação nativa de Framebuffer contíguo usando <strong>Pitch</strong> da VRAM.</p>
+            <pre><code>size_t start_x = terminal_column * (8 * FONT_SCALE);
+size_t start_y = terminal_row * (8 * FONT_SCALE);
+
+fb_ptr[fb_y * (fb->pitch / 4) + fb_x] = color;</code></pre>
+        </div>
+
+        <div class="diagram-container">
+            <div class="mermaid">
+                sequenceDiagram
+                    participant P as vga_putchar('A')
+                    participant G as Font Glyphs
+                    participant C as Core Loop
+                    participant F as VRAM (fb_ptr)
+
+                    P->>G: Extrai uint8_t glyph[8] = font8x8['A']
+                    loop Para Y de 0 a 7
+                        loop Para X de 0 a 7
+                            C->>C: Verifica se Bit X está Ligado (1 ou 0)
+                            C->>C: Pega a Cor de Fundo (bg_color) ou Fonte (fg_color)
+                            loop Scaling (FONT_SCALE 2x2)
+                                C->>F: Grava DWORD Pixel no Array da VRAM
+                            end
+                        end
+                    end
+                    P->>P: Incrementa terminal_column++
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>API de Cores VGA Virtuais</h2>
+        <div class="card">
+            <h3>Conversão VGA (0-15) para TrueColor (RGB 24-bits)</h3>
+            <p>Tradicionalmente as cores possuíam 4 bits (0 a 15). Como nossa placa de vídeo nativa está em modo moderno, a função <code>vga_set_color</code> faz o mapeamento transparente de um bitcode EGA para RGB hexadecimais.</p>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                <div style="background-color: #000000; padding: 10px; color: white; border: 1px solid gray; border-radius: 4px;">0x0 - Preto</div>
+                <div style="background-color: #0000AA; padding: 10px; color: white; border-radius: 4px;">0x1 - Azul</div>
+                <div style="background-color: #00AA00; padding: 10px; color: white; border-radius: 4px;">0x2 - Verde</div>
+                <div style="background-color: #00AAAA; padding: 10px; color: black; border-radius: 4px;">0x3 - Ciano</div>
+                <div style="background-color: #AA0000; padding: 10px; color: white; border-radius: 4px;">0x4 - Vermelho</div>
+                <div style="background-color: #AAAAAA; padding: 10px; color: black; border-radius: 4px;">0x7 - Cinza Claro</div>
+                <div style="background-color: #FFFFFF; padding: 10px; color: black; border-radius: 4px;">0xF - Branco</div>
+            </div>
+        </div>
+    </section>
+</div>
+
+</body>
+</html>

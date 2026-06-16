@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS OS - Roadmap Mestre</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #cbd5e1;
+            --text-strong: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #60a5fa;
+            --link-color: #38bdf8;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        header { background-color: var(--surface-color); border-bottom: 1px solid var(--border-color); padding: 3rem 0; text-align: center; }
+        header h1 { color: var(--text-strong); margin: 0; font-size: 3rem; }
+        header p { color: var(--accent-color); font-size: 1.2rem; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .card { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
+        .card h3 { color: var(--text-strong); margin-top: 0; }
+        .card a { display: inline-block; margin-top: 10px; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .card a:hover { text-decoration: underline; }
+        .diagram-container { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 2rem; margin: 2rem 0; text-align: center; }
+        .nav-back { display: inline-block; margin-bottom: 1rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Roadmap de Evolução: LISP-DOS</h1>
+    <p>O Plano Diretor da Arquitetura do Sistema Operacional</p>
+</header>
+
+<div class="container">
+    <a href="../index.html" class="nav-back">← Voltar ao Índice Principal</a>
+    
+    <section>
+        <p>A <strong>Fase 1</strong> estabeleceu a fundação em 64-bits: Gerenciamento de Memória (PMM/VMM), Ring 0/Ring 3, Syscalls seguras e o sistema base do LISP. Porém, os drivers dependem de abstrações lentas (PIO, PS/2 Emulado, FAT16 rudimentar).</p>
+        <p>Este Roadmap dita a evolução oficial do LISP-DOS em direção à maturidade de Hardware Moderno e experiência do usuário completa. O desenvolvimento está particionado nas seguintes Fases Arquiteturais.</p>
+
+        <div class="diagram-container">
+            <div class="mermaid">
+                gantt
+                    title Horizonte de Desenvolvimento (LISP-DOS)
+                    dateFormat  YYYY-MM-DD
+                    section Fase 2 (Hardware)
+                    RTC e Timers (PIT/APIC)       :active, a1, 2026-06-16, 14d
+                    Bus PCIe e Controlador xHCI   :a2, after a1, 21d
+                    Stack USB e Teclado HID       :a3, after a2, 14d
+                    SATA AHCI DMA Controller      :a4, after a3, 14d
+                    
+                    section Fase 3 (Filesystem)
+                    Virtual File System (VFS)     :b1, after a4, 14d
+                    Subdiretórios no FAT16        :b2, after b1, 10d
+                    Filesystem FAT32 (USB Drives) :b3, after b2, 14d
+
+                    section Fase 4 (Gráficos)
+                    API Gráfica de Janelas        :c1, after b3, 20d
+                    Primitivas LISP (Desenho)     :c2, after c1, 14d
+                    Driver de Mouse USB           :c3, after c2, 14d
+
+                    section Fase 5 (Multitarefa)
+                    Context Switching (TSS)       :d1, after c3, 21d
+                    Escalonador Preemptivo        :d2, after d1, 14d
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Fases Detalhadas</h2>
+        <div class="grid-cards">
+            
+            <div class="card">
+                <h3>🛠️ Fase 2: Expansão de Hardware</h3>
+                <p>Abandono da arquitetura de legado (Legacy BIOS). Construção de drivers PCIe nativos, USB 3.0 (xHCI), controladores SATA AHCI de altíssima velocidade e relógios do sistema.</p>
+                <a href="fase2.html">Detalhes Completos da Fase 2 »</a>
+            </div>
+
+            <div class="card">
+                <h3>🗂️ Fase 3: VFS e Diretórios</h3>
+                <p>Suporte hierárquico (pastas e subpastas) no FAT16, suporte a pendrives grandes (FAT32) e a implementação de uma API abstrata `sys_open/sys_close` com File Descriptors.</p>
+                <a href="fase3.html">Detalhes Completos da Fase 3 »</a>
+            </div>
+
+            <div class="card">
+                <h3>🎨 Fase 4: Gráficos e Mouse</h3>
+                <p>Evolução do Terminal Emulado. Fornecimento de bibliotecas de manipulação gráfica de alta resolução para o LISP desenhar matrizes e janelas fluidas, junto ao driver de Mouse USB.</p>
+                <a href="fase4.html">Detalhes Completos da Fase 4 »</a>
+            </div>
+
+            <div class="card">
+                <h3>⚡ Fase 5: Multitarefa (Multitasking)</h3>
+                <p>Modificação do kernel e do Scheduler. Transição do paradigma de processo único para rodar múltiplos scripts LISP e o terminal paralelamente em Background de forma preemptiva.</p>
+                <a href="fase5.html">Detalhes Completos da Fase 5 »</a>
+            </div>
+
+            <div class="card" style="border-color: #ef4444;">
+                <h3 style="color: #ef4444;">🍓 Fase 6: Portabilidade ARM (Raspberry Pi)</h3>
+                <p>O salto multiplataforma. Transição da arquitetura isolada x86_64 para rodar o LISP-DOS fisicamente de forma bare-metal via AArch64 na arquitetura do BCM2711 (Raspberry Pi 4).</p>
+                <a href="fase6.html" style="color: #fca5a5;">Detalhes da Fase 6 »</a>
+            </div>
+
+        </div>
+    </section>
+</div>
+</body>
+</html>

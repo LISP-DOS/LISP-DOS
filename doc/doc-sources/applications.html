@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicações - LISP-DOS</title>
+    <style>
+        :root { --bg-color: #0f172a; --text-color: #cbd5e1; --accent-color: #38bdf8; --card-bg: #1e293b; --border-color: #334155; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; margin: 0; padding: 0; }
+        header { background-color: var(--card-bg); padding: 2rem; border-bottom: 1px solid var(--border-color); }
+        h1 { color: #fff; margin: 0; }
+        .nav { margin-top: 1rem; }
+        .nav a { color: var(--accent-color); text-decoration: none; margin-right: 1rem; }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .module { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
+        .module h2 { color: var(--accent-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        code { background-color: #000; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; color: #a5b4fc; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Aplicações Embutidas</h1>
+            <div class="nav"><a href="index.html">&larr; Voltar para a Página Inicial</a></div>
+        </div>
+    </header>
+    <div class="container">
+        
+        <div class="module">
+            <h2>1. lisp.c - O Interpretador LISP</h2>
+            <p>O LISP-DOS conta com um interpretador funcional que é ativado utilizando o comando <code>lisp &lt;arquivo&gt;</code> no shell.</p>
+            <p><strong>Arquitetura do Interpretador:</strong></p>
+            <ul>
+                <li><strong>AST (Árvore Sintática):</strong> Implementada sob os conceitos da linguagem LISP tradicional (S-expressions, átomos e listas). As estruturas em C fazem alocações dinâmicas de nós através de chamadas em <code>heap.c</code> para interpretar o parênteses do LISP, onde o primeiro elemento da lista sempre é o operador ou função a ser invocada.</li>
+                <li><strong>Execução e Parsing:</strong> O sistema lê o buffer do arquivo em memória via <code>fat16_read_file()</code> ou lendo o Initramfs local e submete o texto ao lexer do LISP.</li>
+                <li><strong>Suporte Atual:</strong> Permite definições de funções matemáticas globais e avaliações aninhadas como <code>(defun soma ( x y ) ( + x y ))</code> e as executa com <code>( soma 2 7 )</code> imprimindo o resultado.</li>
+            </ul>
+        </div>
+
+        <div class="module">
+            <h2>2. editor.c - Editor de Texto Ncurses-like</h2>
+            <p>Para manipular os scripts <code>.li</code> ou qualquer arquivo de texto sem precisar fechar o QEMU, foi criado um editor local ativado com o comando <code>edit &lt;arquivo&gt;</code>.</p>
+            <p><strong>Ciclo de Vida:</strong></p>
+            <ol>
+                <li>Lê o arquivo de texto se ele existir e aloca sua string no <code>heap</code>.</li>
+                <li>Habilita o controle do framebuffer com uma barra de navegação no estilo Vi/Vim: <code>-- NORMAL -- [i: Insert, w: Salvar, q: Sair, Setas: Navegar]</code></li>
+                <li>No <strong>Modo Normal</strong> (botão <code>Esc</code>), o usuário usa atalhos ou setas do teclado PS/2 (lendo sequências de Escape no <code>keyboard.c</code>) para passear pela tela gráfica.</li>
+                <li>Ao pressionar <code>i</code>, o usuário entra no <strong>Modo Insert</strong>, permitindo editar a string bruta do arquivo diretamente na memória.</li>
+                <li>Ao pressionar <code>w</code> (Modo Normal), a string alterada é enviada ao <code>fat16.c</code> para ser persistida nos setores lógicos do <code>hdd.img</code>.</li>
+            </ol>
+        </div>
+
+    </div>
+</body>
+</html>

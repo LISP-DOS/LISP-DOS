@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Fase 3 (Filesystem)</title>
+    <style>
+        :root { --bg-color: #0f172a; --surface-color: #1e293b; --border-color: #334155; --text-color: #cbd5e1; --text-strong: #f8fafc; --accent-color: #10b981; --link-color: #34d399; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        h1, h2, h3 { color: var(--text-strong); }
+        h1 { font-size: 2.5rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; }
+        .nav-back { display: inline-block; margin-bottom: 2rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .nav-back:hover { text-decoration: underline; }
+        .task-box { background-color: var(--surface-color); border-left: 4px solid var(--accent-color); padding: 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; }
+        code { background-color: #0b1121; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #6ee7b7; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="nav-back">← Voltar ao Roadmap</a>
+    <h1>Fase 3: Maturidade de Sistema de Arquivos</h1>
+    <p>A Fase 3 abandona o uso de nomes de arquivos brutos fixos (ex: "apenas o diretório raiz"). O objetivo é abstrair o armazenamento para parecer com um sistema operacional maduro onde aplicações lidam apenas com ponteiros genéricos e descritores (File Descriptors).</p>
+
+    <div class="task-box">
+        <h2>Parte 3.1: O Virtual File System (VFS)</h2>
+        <p><strong>Problema Atual:</strong> Para ler um arquivo do HD, o usuário chama a syscall `sys_fat16_read_file` amarrando toda a lógica à implementação de baixo nível daquele formato exato.</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Criar a camada VFS (Virtual File System) no Kernel com uma estrutura de pontos de montagem (`mount points`), ex: `/dev/sda` ou `/hd0`.</li>
+            <li>Introduzir o conceito de <strong>File Descriptors (FD)</strong> inteiros mantidos na struct do processo (Ring 3). Padrão UNIX: FD 0 = STDIN, FD 1 = STDOUT, FD 2 = STDERR. FDs maiores que 2 são arquivos abertos.</li>
+            <li>Adicionar novas Syscalls: <code>sys_open(path, flags)</code>, <code>sys_read(fd, buffer, size)</code>, <code>sys_write(fd, buffer, size)</code>, <code>sys_close(fd)</code>, <code>sys_lseek(fd, offset, origin)</code>.</li>
+            <li>Com isso, LISP scripts e o Editor trabalharão com <em>streams</em> (fluxos) de dados gigantes sem precisarem alocar a memória total de um arquivo na RAM antes de começar a processá-lo.</li>
+        </ul>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 3.2: Subdiretórios e Hierarquia no FAT16</h2>
+        <p><strong>Problema Atual:</strong> O FAT16 lê obrigatoriamente a partir de um limite fixo do "Root Directory Region".</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Modificar o driver <code>fat16.c</code> para interpretar atributos em diretórios (`0x10`).</li>
+            <li>Escrever a lógica recursiva para que caminhos em barra invertida (<code>C:\DOCS\TEXTOS\ARQUIVO.TXT</code>) ou normais (<code>/docs/textos/arquivo.txt</code>) resolvam dinamicamente buscando cluster a cluster através de subpastas na cadeia FAT.</li>
+            <li>Adicionar comandos nativos no shell <code>main.c</code>: <code>cd &lt;dir&gt;</code> para trocar de diretório corrente e <code>mkdir &lt;dir&gt;</code> para criar diretórios.</li>
+        </ul>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 3.3: Suporte ao FAT32</h2>
+        <p><strong>Problema Atual:</strong> O FAT16 tem um limite teórico estrutural ao alocar grandes volumes (clusters se esgotam em drives modernos formatados em Windows).</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Criar o arquivo driver <code>fat32.c</code> para decifrar a FAT (File Allocation Table) em modo estendido com 32-bits de endereço por cluster.</li>
+            <li>Lidar com o <code>FAT32 BPB (BIOS Parameter Block)</code> estendido.</li>
+            <li>Registrar o <code>fat32</code> no VFS (da Parte 3.1) e fazê-lo autodetectar a formatação analisando o tamanho da contagem de setores na inicialização.</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

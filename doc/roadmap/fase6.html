@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Fase 6 (Arquitetura ARM & Raspberry Pi)</title>
+    <style>
+        :root { --bg-color: #0f172a; --surface-color: #1e293b; --border-color: #334155; --text-color: #cbd5e1; --text-strong: #f8fafc; --accent-color: #ef4444; --link-color: #fca5a5; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        h1, h2, h3 { color: var(--text-strong); }
+        h1 { font-size: 2.5rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; }
+        .nav-back { display: inline-block; margin-bottom: 2rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .nav-back:hover { text-decoration: underline; }
+        .task-box { background-color: var(--surface-color); border-left: 4px solid var(--accent-color); padding: 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; transition: transform 0.2s; }
+        .task-box:hover { transform: translateX(5px); }
+        .task-box a { color: var(--link-color); text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px; }
+        .task-box a:hover { text-decoration: underline; }
+        code { background-color: #0b1121; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fca5a5; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="nav-back">← Voltar ao Roadmap Principal</a>
+    <h1>Fase 6: Portabilidade ARM e Raspberry Pi 4</h1>
+    <p>A Fase 6 marca o momento em que o LISP-DOS se torna um sistema multiplataforma real. O objetivo é realizar o porte seguro do Kernel Core (atualmente preso à arquitetura Intel x86_64) para a arquitetura <strong>ARMv8-A (AArch64)</strong>, com foco no paradigma Bare-Metal do <strong>Raspberry Pi 4 (BCM2711)</strong>.</p>
+    
+    <p>Diferente de PCs tradicionais, o Raspberry Pi usa um modelo focado na GPU (VideoCore) para o processo de boot e possui mapas de memória engessados fisicamente. Esta fase exige a construção de uma nova <em>Hardware Abstraction Layer (HAL)</em> mantendo o motor do LISP intacto.</p>
+
+    <div class="task-box">
+        <h2>Parte 6.1: Bootloader e Toolchain (AArch64)</h2>
+        <p>Configuração do ambiente de compilação cruzada e compreensão da sequência de inicialização atípica governada pela GPU VideoCore VI.</p>
+        <a href="fase6_1.html">Ver Detalhes da Parte 6.1 »</a>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 6.2: Exception Levels e UART (Debug)</h2>
+        <p>Transição de privilégios do processador ARM (EL2 para EL1) e a criação do nosso primeiro canal de comunicação visual através do <em>Mini UART</em> nas portas GPIO.</p>
+        <a href="fase6_2.html">Ver Detalhes da Parte 6.2 »</a>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 6.3: MMU e Endereçamento Periférico (MMIO)</h2>
+        <p>Desenvolvimento da Memory Management Unit do ARM para traduzir endereços de 64-bits virtuais, mapeando rigorosamente as bases físicas de hardware do Raspberry Pi 4.</p>
+        <a href="fase6_3.html">Ver Detalhes da Parte 6.3 »</a>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 6.4: Integração do LISP Core e Framebuffer</h2>
+        <p>Conectando os módulos de abstração de HW ao antigo <code>main.c</code>, estabelecendo a interface de Mailbox da GPU para capturar a tela nativa HDMI e compilar o interpretador.</p>
+        <a href="fase6_4.html">Ver Detalhes da Parte 6.4 »</a>
+    </div>
+</div>
+</body>
+</html>

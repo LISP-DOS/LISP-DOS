@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISP-DOS - Fase 2 (Hardware)</title>
+    <style>
+        :root { --bg-color: #0f172a; --surface-color: #1e293b; --border-color: #334155; --text-color: #cbd5e1; --text-strong: #f8fafc; --accent-color: #3b82f6; --link-color: #38bdf8; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        h1, h2, h3 { color: var(--text-strong); }
+        h1 { font-size: 2.5rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; }
+        .nav-back { display: inline-block; margin-bottom: 2rem; color: var(--link-color); text-decoration: none; font-weight: bold; }
+        .nav-back:hover { text-decoration: underline; }
+        .task-box { background-color: var(--surface-color); border-left: 4px solid var(--accent-color); padding: 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; }
+        code { background-color: #0b1121; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #a5b4fc; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="nav-back">← Voltar ao Roadmap</a>
+    <h1>Fase 2: Expansão de Hardware Moderno</h1>
+    <p>Nesta fase o LISP-DOS se liberta das amarras dos computadores primitivos dos anos 80. O foco não é criar novas funcionalidades de usuário no LISP, mas sim <strong>escrever drivers complexos</strong> para interagir diretamente com o silício moderno usando o barramento PCIe.</p>
+
+    <div class="task-box">
+        <h2>Parte 2.1: Tempo e Relógios (RTC/PIT/APIC)</h2>
+        <p><strong>Problema Atual:</strong> O Kernel não possui noção da passagem de tempo. Processos não podem esperar sem travar (ocupando ciclos inúteis de CPU).</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Implementar o driver <strong>RTC (Real Time Clock)</strong> lendo as portas <code>0x70</code> e <code>0x71</code> (CMOS) para capturar o ano, mês, dia, horas e segundos reais.</li>
+            <li>Configurar o <strong>PIT (Programmable Interval Timer)</strong> na porta <code>0x43</code> para disparar a Interrupção IRQ0 em uma frequência determinística (ex: 1000 Hz = 1 milissegundo).</li>
+            <li>Como alternativa em placas modernas, inicializar e configurar o <strong>Local APIC Timer</strong>.</li>
+            <li>Adicionar a Syscall <code>sys_sleep(millis)</code> que utiliza <code>hlt</code> atômico enquanto aguarda os ticks avançarem no Kernel, poupando energia elétrica.</li>
+            <li>Adicionar a Syscall <code>sys_get_time</code> para aplicações Ring 3.</li>
+        </ul>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 2.2: O Barramento PCIe e USB 3.0 (xHCI)</h2>
+        <p><strong>Problema Atual:</strong> Dependemos do emulador PS/2 da placa-mãe para o teclado. Periféricos puros USB não são reconhecidos.</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Criar um enumerador de barramento <strong>PCI / PCIe (Configuration Space Access)</strong> capaz de listar todos os hardwares presentes no PC por Vendor ID e Class Code.</li>
+            <li>Identificar a controladora <strong>xHCI (eXtensible Host Controller Interface)</strong>, mapeando o endereço base da MMIO a partir do registrador BAR0 do PCIe.</li>
+            <li>Programar o reset da controladora xHCI, configurar o Device Context Base Address Array (DCBAA) e o anel de comandos (Command Ring).</li>
+            <li>Ativar a abstração das portas físicas da placa mãe, identificando se um teclado está plugado.</li>
+            <li>Escrever o mini-driver HID para extrair o report de *Keystrokes* vindos dos pacotes Transfer Ring do xHCI e traduzi-los para o buffer padrão ASCII do LISP-DOS, substituindo a porta <code>0x60</code> original.</li>
+        </ul>
+    </div>
+
+    <div class="task-box">
+        <h2>Parte 2.3: Discos Ultra-Rápidos via SATA AHCI</h2>
+        <p><strong>Problema Atual:</strong> O arquivo <code>fat16.c</code> invoca o driver <code>ata.c</code> que opera em LBA28 usando I/O Blockings em portas. Esse é o modo mais lento possível (desenvolvido na década de 90).</p>
+        <h3>Tarefas:</h3>
+        <ul>
+            <li>Através do scan do barramento PCIe criado na <em>Parte 2.2</em>, encontrar o controlador com a Classe de Armazenamento Serial ATA (Class Code <code>01h</code>, Subclass <code>06h</code>).</li>
+            <li>Alocar as tabelas de memória PRDT (Physical Region Descriptor Table).</li>
+            <li>Configurar a Command List e enviar o comando <code>READ FPDMA QUEUED</code> via portas AHCI para o disco rígido.</li>
+            <li>O hardware de disco escreverá o conteúdo diretamente na memória física através de DMA (Direct Memory Access), enviando um IRQ apenas quando finalizar. Isso eleva a banda de cópia para a casa dos Gigabytes por segundo.</li>
+            <li>Atualizar a rotina base das abstrações de HD em <code>fat16.c</code> para chamar internamente <code>ahci_read_sector</code> ao invés de <code>ata_read_sector</code>.</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>
